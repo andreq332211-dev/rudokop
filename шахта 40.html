@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Рудник: кликер-шахта</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f0e8da;--pan:#fffaf0;--ink:#2a231c;--mute:#7a6d5e;--line:#dccfba;--lamp:#c27a0e;--ok:#2f7d5b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14110e;--pan:#1f1a15;--ink:#f3e9d8;--mute:#9b8c78;--line:#34291f;--lamp:#ffb02e;--ok:#6fdca8}}
+:root[data-theme="dark"]{--bg:#14110e;--pan:#1f1a15;--ink:#f3e9d8;--mute:#9b8c78;--line:#34291f;--lamp:#ffb02e;--ok:#6fdca8}
+html,body{margin:0}*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.4 Rubik,system-ui,sans-serif;-webkit-tap-highlight-color:transparent;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.w{max-width:480px;margin:0 auto;padding:0 14px}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:12px 0 8px;z-index:2;border-bottom:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.money{font:400 30px/1 'Russo One',Rubik,sans-serif;color:var(--lamp)}
+.chip{background:var(--pan);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font:500 14px Rubik,sans-serif;cursor:pointer;color:var(--ink)}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--lamp)}
+.sm{font-size:13px;color:var(--mute)}
+h2{font:400 18px 'Russo One',Rubik,sans-serif;margin:18px 0 10px}
+.tab{display:none}.tab.on{display:block}
+.stage{position:relative;display:flex;justify-content:center;margin:14px 0 8px;user-select:none;-webkit-user-select:none}
+#rw{filter:drop-shadow(0 0 20px var(--g,transparent));transition:filter .2s}
+#rock{width:250px;height:215px;border:0;padding:0;background:none;cursor:pointer;touch-action:manipulation;transition:transform .08s;display:block}
+#rock:active{transform:scale(.93)}
+.fl{position:absolute;pointer-events:none;font:400 15px 'Russo One',sans-serif;color:var(--c);text-shadow:0 1px 2px #000b;animation:up .8s forwards}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.fl{animation:none;opacity:0}}
+#msg{text-align:center;min-height:20px}
+.btn{font:500 15px Rubik,sans-serif;border:0;border-radius:10px;padding:12px 14px;background:var(--lamp);color:#1b140b;cursor:pointer;width:100%;margin-top:10px}
+.btn.alt{background:var(--pan);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,#rock:focus-visible,.nav button:focus-visible{outline:3px solid var(--ok);outline-offset:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cell{background:var(--pan);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:8px;padding:9px 10px;text-align:left;font:inherit;color:inherit;cursor:pointer;min-height:56px}
+.cell.lock{opacity:.45;cursor:default;border-left-color:var(--line)}
+.cell b{font-weight:500;display:block}
+.card{background:var(--pan);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:8px}
+.card b{font-weight:500}.card p{margin:2px 0 4px}
+.card.cur{border-color:var(--lamp)}
+.pr{display:flex;align-items:center;gap:10px;background:var(--pan);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:6px}
+.pr .n{font:400 16px 'Russo One',sans-serif;width:30px;color:var(--lamp)}.pr .t{flex:1}
+.pr button{width:auto;margin:0;padding:8px 12px}.pr.done{opacity:.5}
+.nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:2px;background:var(--pan);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:3}
+.nav button{flex:1;background:none;border:0;border-radius:8px;padding:10px 0;font:500 12.5px Rubik,sans-serif;color:var(--mute);cursor:pointer}
+.nav button.on{color:#1b140b;background:var(--lamp)}
+.rst{margin:22px 0;background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer}
+.gm{flex:none;width:16px;height:16px;border-radius:3px;transform:rotate(45deg);background:var(--c)}.cr{flex-wrap:wrap}.cr .t{flex:1 1 60%}.cr button{flex:1}
+#pop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0009;z-index:9;padding:20px}#pop.on{display:flex}
+#pop .pc{background:var(--pan);border:2px solid var(--c);border-radius:16px;padding:24px 34px;text-align:center;animation:pin .4s cubic-bezier(.2,1.4,.4,1)}
+#pop .big{width:44px;height:44px;margin:12px auto 22px;border-radius:8px;transform:rotate(45deg);background:var(--c);animation:spin .8s}
+@keyframes pin{from{transform:scale(.3);opacity:0}}@keyframes spin{from{transform:rotate(-135deg) scale(.4)}}
+@media(prefers-reduced-motion:reduce){#pop .pc,#pop .big{animation:none}}
+#ro{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000b;z-index:10;padding:16px}#ro.on{display:flex}
+.rc{background:var(--pan);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:460px;text-align:center}
+.rwin{position:relative;overflow:hidden;margin:14px 0;border-radius:10px;background:var(--bg);padding:10px 0}
+.strip{display:flex;gap:6px;will-change:transform}
+.it{flex:none;width:90px;border:2px solid;border-radius:10px;padding:10px 4px;background:var(--pan);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px}
+.it .gm{width:26px;height:26px;margin:8px 0}.it b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px}.it span{font-weight:500}
+.mk{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--lamp);z-index:2}
+.em{font-size:26px;line-height:42px;height:42px;display:block}
+.dg{font-size:17px;padding:15px}
+.b3{display:flex;gap:6px;width:100%}.b3 .btn{margin-top:0;padding:10px 4px;font-size:13px}
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ci{background:var(--bg);border:2px solid var(--c);border-radius:10px;padding:8px 2px;text-align:center;font-size:12px;position:relative;line-height:1.2}
+.ci .e{font-size:30px;display:block;line-height:1.3}.ci.no{opacity:.4;border-color:var(--line)}.ci .n{position:absolute;top:2px;right:6px;font-size:11px;color:var(--mute)}
+.shelf{border-bottom:6px solid #8a5a2b}
+.sr{animation:fi .4s both}@keyframes fi{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.sr{animation:none}}
+.rar{display:flex;justify-content:space-between;align-items:flex-end;background:var(--pan);border:1px solid var(--line);border-radius:14px;padding:12px 14px 10px;margin-top:14px;flex-wrap:wrap}
+.rar b{font:400 20px 'Russo One',Rubik,sans-serif}.rar span{font:400 22px 'Russo One',Rubik,sans-serif}
+.seg{display:flex;gap:5px;width:100%;margin-top:8px}.seg i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.plate{margin:12px 0 4px;border:3px solid var(--r,var(--line));border-radius:16px;background:var(--pan);padding:14px 10px;text-align:center;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 28px -6px var(--r,transparent)}
+.plate .big{width:78px;height:78px;margin:22px auto 30px;border-radius:12px;transform:rotate(45deg);background:var(--c);box-shadow:inset 0 0 0 4px #fff3}
+.pn{font:400 26px 'Russo One',Rubik,sans-serif}
+.plate.pop{animation:ppop .45s cubic-bezier(.2,1.5,.4,1)}@keyframes ppop{from{transform:scale(.88)}}
+@media(prefers-reduced-motion:reduce){.plate.pop{animation:none}}
+.ctl{display:flex;gap:8px;margin-top:12px}.ctl .chip{flex:1;text-align:center;padding:12px 8px}
+.dg{display:flex;justify-content:center;align-items:center;gap:10px}.dg i{font-style:normal;background:#0002;border-radius:12px;padding:3px 10px;font-size:15px}
+#gate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--bg);z-index:20;padding:24px}#gate.on{display:flex}#gate .gc{max-width:360px;width:100%;text-align:center}#gate h2{font:400 26px 'Russo One',sans-serif;margin:0 0 8px}#gate p{color:var(--mute);margin:0 0 14px}
+#sheet{position:fixed;inset:0;display:none;align-items:flex-end;background:#0008;z-index:11}#sheet.on{display:flex}
+.sh{background:var(--pan);border-radius:20px 20px 0 0;width:100%;max-width:480px;margin:0 auto;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));max-height:85vh;overflow:auto}
+.sh h3{font:400 20px 'Russo One',Rubik,sans-serif;text-align:center;margin:4px 0 6px}.sh>.sm{text-align:center;margin-bottom:10px}
+.sr2{display:flex;align-items:center;gap:10px;padding:12px 6px;border:0;border-top:1px solid var(--line);cursor:pointer;background:none;width:100%;font:inherit;color:inherit;text-align:left}
+.sr2 .t{flex:1}.sr2 b{font-weight:500;display:block;font-size:17px}.sr2 .p{font:400 16px 'Russo One',sans-serif}.sr2 .ck{width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<header><div class="w">
+  <div class="row"><div class="money" id="money">0 ₽</div><span style="display:flex;gap:6px"><button class="chip" id="mus" aria-label="Музыка">🔊</button><button class="chip" data-go="p" id="chip"></button></span></div>
+  <div class="bar" style="margin-top:8px"><i id="xb"></i></div>
+</div></header>
+<div class="w">
+<section class="tab on" id="t-m">
+  <div class="sm" id="loc" style="text-align:center;margin-top:12px"></div>
+  <div class="rar"><b id="rarN">Крутка</b><span id="rarP"></span><div class="seg" id="seg"><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="plate" id="plate"><div id="pc"><div class="sm">Выбери шахту и ставку, затем жми «Крутить»</div></div></div>
+  <div id="msg" class="sm" style="text-align:center;min-height:20px"></div>
+  <div class="ctl"><button class="chip" id="mineB"></button><button class="chip" id="tierB"></button><button class="chip" id="cntB"></button></div>
+  <div id="luck" class="sm" style="text-align:center;margin-top:8px"></div>
+  <button class="btn alt" id="gift"></button>
+  <button class="btn dg" id="dig"><span>Крутить</span><i id="cost"></i></button>
+  <button class="btn alt" id="sell">Продать всё</button>
+  <h2>Сундуки</h2><p class="sm">Выпадают при добыче, чем реже, тем лучше. Можно купить за рубли.</p><div id="chs"></div>
+</section>
+<section class="tab" id="t-i"><h2>Склад руды</h2><div class="grid" id="inv"></div><p class="sm">Тап по руде продаёт только её.</p><button class="rst" id="rst">Сбросить прогресс</button></section>
+
+<section class="tab" id="t-p"><h2>Шахтёрский пасс</h2><p class="sm" id="pI"></p><div id="pl"></div></section>
+<section class="tab" id="t-r"><h2>Пригласи друга</h2><div class="card"><p class="sm">Отправь другу свою ссылку. Когда он запустит бота, он появится в списке ниже. За первого друга получишь Редкий сундук.</p><input id="refLink" readonly style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px;margin-top:6px"><div class="b3" style="margin-top:8px"><button class="btn" id="refSend">Отправить</button><button class="btn alt" id="refCopy">Копировать</button></div><div class="sm" id="invm" style="margin-top:8px"></div></div><h2>Мои друзья <span class="sm" id="frCnt"></span></h2><div id="frl"></div><h2>Рейтинг игроков</h2><p class="sm" id="rI"></p><div id="rl"></div></section></section>
+</div>
+<div id="gate"><div class="gc"><h2>Подпишись на канал</h2><p>Чтобы играть, нужно подписаться на наш Telegram-канал.</p><button class="btn" id="gSub">Подписаться на канал</button><button class="btn alt" id="gOk" disabled>Я подписался</button><p class="sm" id="gMsg" style="margin-top:10px"></p></div></div>
+<div id="sheet"></div><div id="pop"></div><div id="ro"></div><nav class="nav">
+  <button class="on" data-go="m">Шахта</button><button data-go="i">Склад</button><button data-go="p">Пасс</button><button data-go="r">Друзья</button>
+</nav>
+<script>
+var ORES=[['Камень',1,100,1,'#9a948d',0],['Гипс',2,90,1,'#e8e4d8',0],['Уголь',3,70,1,'#4a4a52',0],['Соль',4,60,1,'#f1efe9',0],['Известняк',5,50,1,'#d8d2bf',0],['Медь',8,40,2,'#c8643c',0],['Графит',10,34,2,'#5b5f66',0],['Олово',12,30,2,'#a9b4bd',0],['Магнетит',16,24,2,'#3d3f45',0],['Железо',20,20,2,'#8c6e62',0],
+['Свинец',30,70,2,'#6b7280',1],['Цинк',45,55,3,'#9fb3c8',1],['Кобальт',55,46,3,'#3b6fb6',1],['Никель',70,40,3,'#b7c0c7',1],['Хром',90,31,4,'#c3ccd4',1],['Серебро',110,25,4,'#e0e6ea',1],['Бирюза',140,19,4,'#3fc1b0',1],['Кварц',180,15,4,'#d9c8e8',1],['Нефрит',240,9,5,'#4caf7a',1],
+['Золото',300,60,4,'#e6b422',2],['Янтарь',420,45,5,'#e08a1e',2],['Гранат',520,36,5,'#a4243b',2],['Рубин',700,28,5,'#d62d50',2],['Аквамарин',900,22,6,'#6ec6d8',2],['Изумруд',1100,18,6,'#1fa86a',2],['Турмалин',1350,14,6,'#d94f9a',2],['Опал',1600,10,6,'#9bd5e8',2],
+['Аметист',2500,60,6,'#9b59d0',3],['Цитрин',3100,48,7,'#f0b83a',3],['Сапфир',3800,40,7,'#2f6fdc',3],['Берилл',4600,31,7,'#7fcf9f',3],['Топаз',5500,25,7,'#f2a93b',3],['Иридий',7000,18,8,'#b8c4d6',3],['Платина',8500,14,8,'#7fd1d9',3],['Родий',10000,10,8,'#cfd8e4',3],['Александрит',12000,7,8,'#2aa89a',3],
+['Алмаз',15000,60,8,'#6fe3ff',4],['Чароит',18000,50,9,'#8a4fc9',4],['Обсидиан',22000,40,9,'#2b2b3a',4],['Мифрил',28000,30,9,'#a8d8ff',4],['Лунный камень',35000,22,9,'#c9d4ff',4],['Орихалк',45000,16,10,'#e07a4f',4],['Тёмный титан',60000,12,10,'#7a4fd6',4],['Адамантит',80000,8,10,'#d4375f',4],['Звёздная пыль',120000,5,10,'#ffd86b',4]];
+var LOC=[['Каменоломня',0,'#8a8178'],['Медные копи',5000,'#a8683c'],['Глубокая шахта',80000,'#4d5a6b'],['Кристальная пещера',1500000,'#5b4a8c'],['Бездна',30000000,'#2a2233']];
+ORES.forEach(function(o){o[6]=o[1];if(o[1]>=1000)o[1]*=2});
+var D={m:0,inv:{},mus:1,iv:0,sb:0,tier:0,xp:0,cl:[],loc:0,un:[0],ch:0,earn:0,chs:[0,0,0,0],seen:{},gd:'',sub:0,sp:0,n:1},S=JSON.parse(JSON.stringify(D));
+try{var r=localStorage.getItem('rudnik_v3')||localStorage.getItem('rudnik_v2');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+var $=function(i){return document.getElementById(i)},fmt=function(n){return Math.floor(n).toLocaleString('ru-RU')};
+if(S.ch){S.chs[0]+=S.ch;S.ch=0}ORES.forEach(function(o){if(S.inv[o[0]])S.seen[o[0]]=1});
+var curTab='m';
+var CS=null,lastC=0;
+function save(){var j=JSON.stringify(S);try{localStorage.setItem('rudnik_v3',j)}catch(e){}if(CS&&Date.now()-lastC>3000&&j.length<4000){lastC=Date.now();try{CS.setItem('rudnik_v3',j,function(){})}catch(e){}}}
+var need=function(l){return 120+90*l};
+function lv(){var x=S.xp,l=0;while(l<20&&x>=need(l)){x-=need(l);l++}return l>=20?[20,1,1]:[l,x,need(l)]}
+function rew(l){if(l%5==0)return{t:'Эпический сундук',c:2};if(l%5==3)return{t:'Редкий сундук',c:1};var m=Math.round(100*Math.pow(l,2.2));return{t:fmt(m)+' ₽',m:m}}
+function pool(i){return ORES.filter(function(o){return o[5]==i})}
+var ORN=[['Обычная','#9a948d'],['Необычная','#2fb35a'],['Редкая','#2f6fdc'],['Эпическая','#9b59d0'],['Легендарная','#e6b422']],TN=['Обычная крутка','Необычная и выше','Редкая и выше','Эпическая и выше','Легендарная и выше'];
+function orR(o){var a=pool(o[5]);return Math.round(a.indexOf(o)*4/(a.length-1))}
+function cand(l,t){return pool(l).filter(function(o){return orR(o)>=t})}
+function evT(l,t){var a=cand(l,t),s=0,w=0;a.forEach(function(o){s+=o[6]*o[2];w+=o[2]});return s/w*3}
+function nice(n){var p=Math.pow(10,Math.max(0,Math.floor(Math.log(n)/Math.LN10)-1));return Math.max(1,Math.round(n/p)*p)}
+function spinCost(l,t){return nice(evT(l,t)*1.05)}
+function drawRock(){S.un=[0,1,2,3,4];if(!S.sb){S.sb=1;S.m+=100000}}
+function idleReel(){}
+function pickOre(l,t){var a=cand(l,t),s=0,i;a.forEach(function(o){s+=o[2]});var x=Math.random()*s;for(i=0;i<a.length;i++){x-=a[i][2];if(x<=0)return a[i]}return a[0]}
+function show(o,q){var r=orR(o),R=ORN[r],p=$('plate'),i,sg=$('seg').children;$('pc').innerHTML='<div class="big" style="--c:'+o[4]+'"></div><div class="pn">'+o[0]+'</div><div class="sm">'+(q?'×'+q+' · '+fmt(o[1])+' ₽ за шт.':'&nbsp;')+'</div>';
+p.style.setProperty('--r',R[1]);$('rarN').textContent=R[0];$('rarN').style.color=R[1];$('rarP').textContent=q?fmt(o[1]*q)+' ₽':'';$('rarP').style.color=R[1];for(i=0;i<5;i++)sg[i].style.background=i<=r?R[1]:''}
+function luckAt(k){return k%500==0?10:k%100==0?2:1}
+function doDig(){if(spin)return;var l=S.loc,t=S.tier,n=S.n==5?5:1,c=spinCost(l,t)*n;if(S.m<c){$('msg').textContent='Не хватает рублей на крутку';return}
+S.m-=c;var list=[],k,best=null,mx=1;
+for(k=0;k<n;k++){S.sp++;var lk=luckAt(S.sp),r={o:pickOre(l,t),q:(1+Math.floor(Math.random()*5))*lk,lk:lk};if(lk>mx)mx=lk;list.push(r);if(!best||r.o[1]*r.q>best.o[1]*best.q)best=r}
+spin=true;render();save();$('msg').textContent='';
+var a=cand(l,0),rm=window.matchMedia('(prefers-reduced-motion:reduce)').matches,d=60,i=0;
+function fin(){show(best.o,best.q);var p=$('plate');p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop');spin=false;applyAll(list,mx)}
+function step(){if(rm||i>=18){fin();return}i++;show(a[Math.floor(Math.random()*a.length)],0);d*=1.07;setTimeout(step,d)}
+step()}
+function applyAll(list,mx){var cf=0,got={},nw=null,top=0,m,parts=[];
+list.forEach(function(x){var o=x.o,r=orR(o);S.inv[o[0]]=(S.inv[o[0]]||0)+x.q;got[o[0]]=(got[o[0]]||0)+x.q;top=Math.max(top,r);S.xp+=Math.ceil(o[3]/2)*(1+S.tier);if(Math.random()<.04){S.chs[rollR()]++;cf++}
+if(!S.seen[o[0]]){S.seen[o[0]]=1;if(!nw||o[1]>nw[1])nw=o}});
+if(list.length==1){m='Добыто: '+list[0].o[0]+' ×'+list[0].q}else{for(var nm in got)parts.push(nm+' ×'+got[nm]);m='Добыто: '+parts.join(', ')}
+if(mx>1)m='🍀 Удача ×'+mx+'! '+m;
+if(cf)m+=' · сундуков: '+cf+'!';
+if(nw)discover(nw);
+$('msg').textContent=m;sfx(72+top*6);render();save()}
+function openSheet(title,desc,rows,sel,pick){var sh=$('sheet'),h='<div class="sh"><h3>'+title+'</h3><div class="sm">'+desc+'</div>';
+rows.forEach(function(r,i){h+='<button class="sr2" data-i="'+i+'">'+(r.g?'<i class="gm" style="--c:'+r.g+'"></i>':'')+'<span class="t"><b style="color:'+(r.c||'var(--ink)')+'">'+r.n+'</b><span class="sm">'+r.s+'</span></span><span class="p">'+r.p+'</span>'+(i==sel?'<span class="ck">✓</span>':'')+'</button>'});
+sh.innerHTML=h+'</div>';sh.className='on';
+sh.onclick=function(e){var b=e.target.closest&&e.target.closest('.sr2');if(b)pick(+b.dataset.i);if(b||e.target===sh)sh.className=''}}
+var GIFT=10000;
+function today(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function giftLeft(){var n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);return m-n}
+function updGift(){var b=$('gift');if(!b)return;if(S.gd===today()){var ms=giftLeft(),h=Math.floor(ms/36e5),mi=Math.floor(ms%36e5/6e4);b.disabled=true;b.textContent='🎁 Подарок получен · следующий через '+(h?h+' ч ':'')+mi+' мин'}else{b.disabled=false;b.textContent='🎁 Ежедневный подарок · '+fmt(GIFT)+' ₽'}}
+function claimGift(){if(S.gd===today())return;S.gd=today();S.m+=GIFT;$('msg').textContent='Ежедневный подарок: +'+fmt(GIFT)+' ₽';try{sfx(90)}catch(e){}render();save()}
+function addM(t){S.m+=t;S.earn+=t}
+function sellOne(n){var o=ORES.filter(function(x){return x[0]==n})[0],c=S.inv[n]||0;if(!c)return;addM(c*o[1]);S.inv[n]=0;render();save()}
+function sellAll(){var t=0;ORES.forEach(function(o){t+=(S.inv[o[0]]||0)*o[1]});if(!t){$('msg').textContent='Продавать нечего';return}addM(t);S.inv={};$('msg').textContent='Продано на '+fmt(t)+' ₽';render();save()}
+var CH=[['Обычный',300,'#9a948d',.3,1.5,20,70,3.5],['Редкий',2000,'#2f6fdc',.15,2.2,60,22,4],['Эпический',15000,'#9b59d0',.1,2.8,150,7,5],['Легендарный',120000,'#e6b422',.05,5,400,1,7]],chrow=[];
+function rollM(c){return c[3]+Math.pow(Math.random(),c[7])*(c[4]-c[3])}
+function chPrice(i){return Math.round(CH[i][1]*Math.pow(3,S.loc))}
+function rollR(){var x=Math.random()*100,i;for(i=0;i<3;i++){x-=CH[i][6];if(x<=0)return i}return 3}
+var spin=false;
+function tc(x){return x<1?'#9a948d':x<2?'#2f6fdc':x<4?'#9b59d0':'#e6b422'}
+function chestOnce(i,p){var c=CH[i],m=Math.round(p*rollM(c));addM(m);S.xp+=c[5];return{m:m}}
+function openChest(i,n,direct){if(spin)return;if(!direct){if(S.chs[i]<n)return;S.chs[i]-=n}var p=chPrice(i),rs=[],j;for(j=0;j<n;j++)rs.push(chestOnce(i,p));render();save();if(n==1)roulette(i,rs[0],p);else summary(i,rs)}
+function buyChest(i){var p=chPrice(i);if(!spin&&S.m>=p){S.m-=p;openChest(i,1,true)}}
+function roulette(i,x,p){spin=true;var c=CH[i],m=x.m,pl=ORES.filter(function(o){return S.un.indexOf(o[5])>-1}),win=36,h='',k;
+for(k=0;k<44;k++){var q=k==win?m/p:rollM(c),o=pl[Math.floor(Math.random()*pl.length)];h+='<div class="it" style="--c:'+o[4]+';border-color:'+tc(q)+'"><i class="gm"></i><b>'+o[0]+'</b><span>+'+fmt(p*q)+' ₽</span></div>'}
+var r=$('ro');r.innerHTML='<div class="rc"><div class="sm">'+c[0]+' сундук</div><div class="rwin"><div class="mk"></div><div class="strip" id="st">'+h+'</div></div><div class="money" id="rr" style="min-height:30px"></div><button class="btn" id="rk" disabled>Забрать</button></div>';r.className='on';
+var st=$('st'),wd=st.parentNode.clientWidth,tg=win*96+45+Math.round((Math.random()-.5)*60)-wd/2,rm=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+void st.offsetWidth;st.style.transition=rm?'none':'transform 4.4s cubic-bezier(.12,.7,.1,1)';st.style.transform='translateX(-'+tg+'px)';
+setTimeout(function(){spin=false;$('rr').textContent='+'+fmt(m)+' ₽ и '+c[5]+' опыта';sfx(84);$('rk').disabled=false},rm?50:4500);
+$('rk').onclick=function(){r.className=''}}
+function summary(i,rs){var c=CH[i],t=0,h='',r=$('ro');
+rs.forEach(function(x,j){t+=x.m;h+='<div class="pr sr" style="animation-delay:'+j*.3+'s"><span class="n">'+(j+1)+'</span><span class="t"><b>+'+fmt(x.m)+' ₽</b></span></div>'});
+r.innerHTML='<div class="rc"><div class="sm">'+c[0]+' сундук ×'+rs.length+'</div><div style="margin:12px 0;text-align:left;max-height:55vh;overflow:auto">'+h+'</div><div class="money">+'+fmt(t)+' ₽</div><div class="sm" style="margin-bottom:4px">'+(c[5]*rs.length)+' опыта</div><button class="btn" id="rk">Забрать</button></div>';r.className='on';sfx(90);
+$('rk').onclick=function(){r.className=''}}
+CH.forEach(function(c,i){var e=document.createElement('div');e.className='pr cr';e.style.borderLeft='5px solid '+c[2];e.innerHTML='<span class="t"><b></b><div class="sm"></div></span><div class="b3"><button class="btn alt">Открыть ×1</button><button class="btn alt">Открыть ×5</button><button class="btn"></button></div>';var b=e.querySelectorAll('button');b[0].onclick=function(){openChest(i,1)};b[1].onclick=function(){openChest(i,5)};b[2].onclick=function(){buyChest(i)};$('chs').appendChild(e);chrow[i]=e});
+var popT;function discover(o){var p=$('pop');p.innerHTML='<div class="pc" style="--c:'+o[4]+'"><div class="sm">Новая руда!</div><div class="big"></div><div style="font:400 24px \'Russo One\',sans-serif">'+o[0]+'</div><div class="money" style="margin-top:6px">'+fmt(o[1])+' ₽</div><div class="sm">за штуку</div></div>';p.className='on';clearTimeout(popT);popT=setTimeout(function(){p.className=''},2800)}
+$('pop').onclick=function(){this.className=''};
+var cells={},prow=[],lrow=[];
+ORES.forEach(function(o){var b=document.createElement('button');b.className='cell';b.style.setProperty('--c',o[4]);b.innerHTML='<b></b><span class="sm"></span>';b.onclick=function(){if(S.un.indexOf(o[5])>-1)sellOne(o[0])};$('inv').appendChild(b);cells[o[0]]=b});
+
+for(var l=1;l<=20;l++)(function(l){var e=document.createElement('div');e.className='pr';e.innerHTML='<span class="n">'+l+'</span><span class="t"><b></b><div class="sm"></div></span><button class="btn"></button>';
+  e.querySelector('button').onclick=function(){claim(l)};$('pl').appendChild(e);prow[l]=e})(l);
+function claim(l){var R=rew(l);if(lv()[0]<l||S.cl.indexOf(l)>-1)return;S.cl.push(l);if(R.m)addM(R.m);if(R.c!=null)S.chs[R.c]++;render();save()}
+function render(){
+  $('money').textContent=fmt(S.m)+' ₽';updGift();var L=lv();
+  $('loc').textContent='Шахта: '+LOC[S.loc][0];$('xb').style.width=(L[1]/L[2]*100)+'%';
+  CH.forEach(function(c,i){var e=chrow[i],b=e.querySelectorAll('button'),p=chPrice(i);e.querySelector('b').textContent=c[0]+' сундук ×'+S.chs[i];e.querySelector('.sm').textContent='Приз '+fmt(p*c[3])+'–'+fmt(p*c[4])+' ₽, '+c[5]+' опыта';b[0].disabled=S.chs[i]<1;b[1].disabled=S.chs[i]<5;b[2].textContent='Купить '+fmt(p)+' ₽';b[2].disabled=S.m<p});
+  var ready=0;for(var i=1;i<=L[0];i++)if(S.cl.indexOf(i)<0)ready++;
+  $('chip').textContent='Пасс '+L[0]+'/20'+(ready?' · ждёт '+ready:'');
+  $('pI').textContent=L[0]>=20?'Все уровни пройдены.':'До уровня '+(L[0]+1)+': '+fmt(L[1])+' из '+fmt(L[2])+' опыта. Опыт даёт добыча (чем реже руда, тем больше) и сундуки.';
+  for(var l=1;l<=20;l++){var R=rew(l),e=prow[l],got=S.cl.indexOf(l)>-1,op=L[0]>=l,bt=e.querySelector('button');
+    e.querySelector('b').textContent=R.t;e.querySelector('.sm').textContent=op?(got?'Получено':'Можно забрать'):'Откроется на уровне '+l;
+    e.className='pr'+(got?' done':'');bt.textContent='Забрать';bt.style.display=(op&&!got)?'':'none'}
+  ORES.forEach(function(o){var b=cells[o[0]],op=S.un.indexOf(o[5])>-1,n=S.inv[o[0]]||0;b.className='cell'+(op?'':' lock');b.querySelector('b').textContent=op?o[0]:'???';b.querySelector('.sm').textContent=op?fmt(n)+' шт. · '+fmt(o[1])+' ₽':'шахта закрыта'});
+  
+  $('mus').textContent=S.mus?'🔊':'🔇';$('mineB').textContent='⛏ '+LOC[S.loc][0]+' ▾';$('tierB').textContent=TN[S.tier].replace(' крутка','')+' ▾';$('tierB').style.color=ORN[S.tier][1];var sc=spinCost(S.loc,S.tier),tv=0;var nn=S.n==5?5:1;$('cost').textContent=fmt(sc*nn)+' ₽';$('dig').disabled=spin||S.m<sc*nn;$('cntB').textContent='🎰 Крутить ×'+nn;var u1=100-S.sp%100,u2=500-S.sp%500;$('luck').textContent='🍀 Удача ×2 через '+u1+' · ×10 через '+u2+' прокруток';ORES.forEach(function(o){tv+=(S.inv[o[0]]||0)*o[1]});$('sell').textContent='Продать всё'+(tv?' · '+fmt(tv)+' ₽':'');if(curTab=='m')idleReel();
+}
+var BOT='RudokopMineBot',API='/api';
+function apiOn(){return TG&&TG.initData&&API.indexOf('YOUR-')<0}
+function api(p,o){o=o||{};o.headers={'X-Init-Data':TG.initData,'Content-Type':'application/json'};return fetch(API+p,o).then(function(r){if(!r.ok)throw 0;return r.json()})}
+function pushScore(){if(!apiOn())return Promise.resolve();return api('/score',{method:'POST',body:JSON.stringify({money:Math.floor(S.m),lvl:lv()[0]})}).catch(function(){})}
+setInterval(pushScore,15000);
+function loadBoard(){var rl=$('rl'),I=$('rI');
+  if(!apiOn()){I.textContent='Рейтинг появится после подключения сервера (см. API в коде).';return}
+  I.textContent='Топ игроков по рублям на счету.';
+  pushScore().then(function(){return api('/leaderboard')}).then(function(d){
+    rl.innerHTML='';var a=d.top||[];if(!a.length){rl.textContent='Пока никого нет.';return}
+    function row(p,i){var e=document.createElement('div');e.className='pr';e.innerHTML='<span class="n"></span><span class="t"><b></b><div class="sm"></div></span>';
+      e.querySelector('.n').textContent=i;e.querySelector('b').textContent=(p.name||'Шахтёр')+(p.me?' (вы)':'');
+      e.querySelector('.sm').textContent=fmt(p.money||0)+' ₽ · пасс '+(p.lvl||0);if(p.me)e.style.borderColor='var(--lamp)';rl.appendChild(e)}
+    var inTop=false;a.forEach(function(p,i){if(p.me)inTop=true;row(p,i+1)});
+    if(!inTop&&d.me){var g=document.createElement('div');g.className='sm';g.style.textAlign='center';g.textContent='…';rl.appendChild(g);row(d.me,d.me.rank)}
+  }).catch(function(){I.textContent='Не удалось загрузить рейтинг.'})}
+function go(k){document.querySelectorAll('.tab').forEach(function(t){t.className='tab'+(t.id=='t-'+k?' on':'')});document.querySelectorAll('.nav button').forEach(function(b){b.className=b.dataset.go==k?'on':''});window.scrollTo(0,0);curTab=k;if(k=='r'){loadBoard();loadFriends()}if(k=='m')idleReel()}
+document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
+$('dig').onclick=doDig;$('cntB').onclick=function(){if(spin)return;S.n=S.n==5?1:5;save();render()};
+$('sell').onclick=sellAll;$('gift').onclick=claimGift;setInterval(updGift,30000);
+$('rst').onclick=function(){if(confirm('Сбросить весь прогресс?')){var g=S.gd,sb=S.sub;S=JSON.parse(JSON.stringify(D));S.gd=g;S.sub=sb;drawRock();render();save()}};
+setInterval(save,5000);
+var TG=window.Telegram&&Telegram.WebApp;
+if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVerticalSwipes();
+if(TG.initData&&TG.isVersionAtLeast&&TG.isVersionAtLeast('6.9')&&TG.CloudStorage){CS=TG.CloudStorage;
+CS.getItem('rudnik_v3',function(err,v){if(!err&&v){try{S=Object.assign(JSON.parse(JSON.stringify(D)),JSON.parse(v));drawRock();render()}catch(e){}}})}}catch(e){}}
+document.addEventListener('visibilitychange',function(){if(document.hidden){lastC=0;save();musicStop()}else if(S.mus&&AC)musicStart()});
+var AC=null,MG=null,mT=null,mN=0,mS=0,PROG=[[57,60,64,69],[53,57,60,65],[48,55,60,64],[55,59,62,67]],SEQ=[0,1,2,3,2,1,2,3];
+function mf(n){return 440*Math.pow(2,(n-69)/12)}
+function tone(f,t,d,v,ty){var o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(MG);o.start(t);o.stop(t+d+.05)}
+function sched(){while(mN<AC.currentTime+.8){var n=PROG[Math.floor(mS/8)%4],k=mS%8;tone(mf(n[SEQ[k]]),mN,.5,.35,'triangle');if(k==0)tone(mf(n[0]-24),mN,2.4,.6,'sine');if(k==4)tone(mf(n[2]),mN,1.2,.15,'sine');mN+=.34;mS++}}
+function musicStart(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=.16;MG.connect(AC.destination)}if(AC.state=='suspended')AC.resume();if(!mT){mN=AC.currentTime+.1;mT=setInterval(sched,250)}}catch(e){}}
+function musicStop(){clearInterval(mT);mT=null;try{if(AC)AC.suspend()}catch(e){}}
+function sfx(n){try{if(!AC||!S.mus||AC.state!='running')return;tone(mf(n),AC.currentTime,.3,.4,'triangle')}catch(e){}}
+$('mus').onclick=function(){S.mus=S.mus?0:1;if(S.mus)musicStart();else musicStop();render();save()};
+document.addEventListener('pointerdown',function(){if(S.mus&&!AC)musicStart()},{once:true});
+var tu=TG&&TG.initDataUnsafe&&TG.initDataUnsafe.user,MYID=tu?tu.id:0;
+var REF=MYID?'https://t.me/'+BOT+'?start=ref_'+MYID:'';
+var refMsg='Заходи в «Рудник»: крути руду и богатей!';
+function setM(m){$('invm').textContent=m}
+function initRef(){var f=$('refLink');
+  if(!MYID){f.value='';setM('Ссылка создаётся только внутри Telegram. Открой игру через бота.');return}
+  if(BOT.indexOf('YOUR_')==0){setM('Укажи имя бота в переменной BOT.');return}
+  f.value=REF;loadFriends()}
+$('refSend').onclick=function(){if(!REF)return;var u='https://t.me/share/url?url='+encodeURIComponent(REF)+'&text='+encodeURIComponent(refMsg);
+  if(TG&&TG.openTelegramLink)TG.openTelegramLink(u);else window.open(u,'_blank')};
+$('refCopy').onclick=function(){if(!REF)return;var f=$('refLink');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(REF).then(function(){setM('Ссылка скопирована.')}).catch(function(){f.select();setM('Скопируй ссылку вручную.')});
+  else{f.select();setM('Скопируй ссылку вручную.')}};
+function loadFriends(){var l=$('frl');if(!apiOn()){l.innerHTML='<p class="sm">Список друзей пока недоступен.</p>';return}
+  api('/friends').then(function(d){
+    var a=d.friends||[];$('frCnt').textContent=a.length?'· '+a.length:'';l.innerHTML='';
+    if(!a.length){l.innerHTML='<p class="sm">Пока никого. Отправь ссылку другу.</p>';return}
+    a.forEach(function(f){var e=document.createElement('div');e.className='pr';e.innerHTML='<span class="t"><b></b><div class="sm"></div></span>';
+      e.querySelector('b').textContent=f.name||'Шахтёр';e.querySelector('.sm').textContent=(f.money!=null?fmt(f.money)+' ₽ · ':'')+'пришёл '+new Date(f.ts*1000).toLocaleDateString('ru-RU');l.appendChild(e)});
+    if(!S.iv){S.iv=1;S.chs[1]++;setM('Первый друг в игре! Бонус: +1 Редкий сундук.');render();save()}
+  }).catch(function(){l.innerHTML='<p class="sm">Не удалось загрузить друзей.</p>'})}
+initRef();
+$('mineB').onclick=function(){openSheet('Шахта','Выбери, где копать. Руда и цена крутки зависят от шахты.',LOC.map(function(L,i){var a=pool(i);return{n:L[0],g:a[a.length-1][4],s:a.length+' видов руды · до '+fmt(a[a.length-1][1])+' ₽ за шт.',p:fmt(spinCost(i,S.tier))+' ₽'}}),S.loc,function(i){S.loc=i;save();render()})};
+$('tierB').onclick=function(){var b=spinCost(S.loc,0);openSheet('Ставка','Дороже крутка: выше гарантированная редкость руды. Цена примерно равна средней стоимости такой добычи, так что это не бесплатные деньги, а быстрый путь к редкой руде.',TN.map(function(n,i){var c=spinCost(S.loc,i);return{n:n,c:ORN[i][1],s:i?'гарантия редкости · ×'+Math.round(c/b)+' к цене':'любая руда',p:fmt(c)+' ₽'}}),S.tier,function(i){S.tier=i;save();render()})};
+drawRock();render();
+
+var CHAN='https://t.me/qd69H3QgxswxYWZh';
+(function(){var g=$('gate'),b1=$('gSub'),b2=$('gOk'),m=$('gMsg');
+if(S.sub)return;g.className='on';
+b1.onclick=function(){try{if(TG&&TG.openTelegramLink&&TG.initData)TG.openTelegramLink(CHAN);else window.open(CHAN,'_blank')}catch(e){window.open(CHAN,'_blank')}
+m.textContent='Подпишись и вернись в игру…';b2.disabled=true;setTimeout(function(){b2.disabled=false;m.textContent='Теперь жми «Я подписался».'},4000)};
+b2.onclick=function(){S.sub=1;g.className='';save()}})();
+</script>
+</body>
+</html>
